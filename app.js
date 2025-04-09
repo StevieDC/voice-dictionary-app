@@ -135,3 +135,225 @@ document.addEventListener('DOMContentLoaded', () => {
             statusElement.textContent = `Error: ${event.error}`;
         };
     }
+
+    // Navigation Menu Handlers
+    menuToggle.addEventListener('click', () => {
+        navMenu.classList.toggle('active');
+    });
+
+    homeLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection(homeSection);
+        setActiveNavLink(homeLink);
+    });
+
+    savedWordsLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection(savedWordsSection);
+        setActiveNavLink(savedWordsLink);
+        loadSavedWords(); // Refresh the saved words list
+    });
+
+    settingsLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection(settingsSection);
+        setActiveNavLink(settingsLink);
+    });
+
+    // Event Handlers
+    micButton.addEventListener('click', () => {
+        if (!recognition) {
+            initSpeechRecognition();
+        }
+        
+        if (micButton.classList.contains('listening')) {
+            recognition.stop();
+        } else {
+            startListening();
+        }
+    });
+    
+    // Pagination event handlers
+    prevPageButton.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            displayPagedWords();
+        }
+    });
+    
+    nextPageButton.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            displayPagedWords();
+        }
+    });
+    
+    acceptButton.addEventListener('click', () => {
+        if (currentWordData) {
+            saveWord(currentWordData.word, currentWordData.definitions);
+            hideActionButtons();
+            statusElement.textContent = `"${currentWordData.word}" saved to dictionary`;
+            currentWordData = null;
+        }
+    });
+    
+    rejectButton.addEventListener('click', () => {
+        hideActionButtons();
+        statusElement.textContent = `"${currentWordData ? currentWordData.word : ''}" rejected`;
+        currentWordData = null;
+    });
+    
+    saveSettingsButton.addEventListener('click', () => {
+        saveSettings();
+    });
+    
+    backupDataButton.addEventListener('click', () => {
+        backupDictionary();
+    });
+    
+    importDataButton.addEventListener('click', () => {
+        importFileInput.click();
+    });
+    
+    importFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            importDictionary(e.target.files[0]);
+        }
+    });
+    
+    clearHistoryButton.addEventListener('click', () => {
+        clearHistory();
+    });
+
+    // Functions - Navigation
+    function showSection(section) {
+        // Hide all sections
+        homeSection.classList.add('hidden');
+        savedWordsSection.classList.add('hidden');
+        settingsSection.classList.add('hidden');
+        
+        // Show the requested section
+        section.classList.remove('hidden');
+        
+        // Close mobile menu
+        navMenu.classList.remove('active');
+    }
+    
+    function setActiveNavLink(link) {
+        // Remove active class from all links
+        homeLink.classList.remove('active');
+        savedWordsLink.classList.remove('active');
+        settingsLink.classList.remove('active');
+        
+        // Add active class to the clicked link
+        link.classList.add('active');
+    }
+
+    // Functions - Dictionary
+    function startListening() {
+        try {
+            recognition.start();
+        } catch (error) {
+            console.error('Recognition error:', error);
+            statusElement.textContent = 'Error starting recognition. Try again.';
+        }
+    }
+
+    function showActionButtons() {
+        if (!settings.autoSave) {
+            actionButtonsContainer.classList.remove('hidden');
+        }
+    }
+    
+    function hideActionButtons() {
+        actionButtonsContainer.classList.add('hidden');
+    }
+
+    async function lookupWord(word) {
+        try {
+            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+            if (!response.ok) {
+                throw new Error('Word not found');
+            }
+            
+            const data = await response.json();
+            
+            if (data && data.length > 0) {
+                const wordData = data[0];
+                const definitions = [];
+                
+                if (wordData.meanings && wordData.meanings.length > 0) {
+                    wordData.meanings.forEach(meaning => {
+                        const partOfSpeech = meaning.partOfSpeech;
+                        
+                        if (meaning.definitions && meaning.definitions.length > 0) {
+                            meaning.definitions.forEach(def => {
+                                definitions.push({
+                                    partOfSpeech,
+                                    definition: def.definition,
+                                    example: def.example
+                                });
+                            });
+                        }
+                    });
+                }
+                
+                // Save current word data for accept/reject buttons
+                currentWordData = {
+                    word: wordData.word,
+                    definitions: definitions
+                };
+                
+                displayDefinition(wordData.word, definitions);
+                
+                // If auto-save is enabled, save the word automatically
+                if (settings.autoSave) {
+                    saveWord(wordData.word, definitions);
+                    statusElement.textContent = `"${wordData.word}" automatically saved to dictionary`;
+                } else {
+                    showActionButtons();
+                }
+            } else {
+                throw new Error('No definitions found');
+            }
+        } catch (error) {
+            console.error('Lookup error:', error);
+            definitionDisplayElement.innerHTML = `<p>Sorry, couldn't find a definition for "${word}". Please try another word.</p>`;
+            hideActionButtons();
+        }
+    }
+
+    function displayDefinition(word, definitions) {
+        if (!definitions || definitions.length === 0) {
+            definitionDisplayElement.innerHTML = `<p>No definitions found for "${word}".</p>`;
+            return;
+        }
+
+        let html = `<h3>${word}</h3>`;
+
+        // Group definitions by part of speech
+        const groupedDefs = {};
+        definitions.forEach(def => {
+            if (!groupedDefs[def.partOfSpeech]) {
+                groupedDefs[def.partOfSpeech] = [];
+            }
+            groupedDefs[def.partOfSpeech].push(def);
+        });
+
+        // Display each part of speech and its definitions
+        for (const [pos, defs] of Object.entries(groupedDefs)) {
+            html += `<p><span class="part-of-speech">${pos}</span></p><ol>`;
+            
+            defs.forEach(def => {
+                html += `<li>${def.definition}`;
+                if (def.example) {
+                    html += `<br><em>Example: "${def.example}"</em>`;
+                }
+                html += `</li>`;
+            });
+            
+            html += `</ol>`;
+        }
+
+        definitionDisplayElement.innerHTML = html;
+    }
