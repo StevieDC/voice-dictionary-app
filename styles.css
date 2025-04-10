@@ -158,6 +158,7 @@ h2 {
     margin-bottom: 2rem;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     min-height: 150px;
+    position: relative;
 }
 
 .definition-display {
@@ -319,11 +320,19 @@ h2 {
 }
 
 .loading-container {
-    display: none !important;
+    display: none; /* Changed from none !important to allow JavaScript to control visibility */
     flex-direction: column;
     align-items: center;
     justify-content: center;
     margin: 20px 0;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 10;
+    border-radius: 8px;
 }
 
 .loading-container.visible {
@@ -333,6 +342,7 @@ h2 {
 .loading-text {
     margin-top: 10px;
     color: var(--secondary-text);
+    font-weight: bold;
 }
 
 /* Action Buttons */
@@ -570,6 +580,10 @@ body.dark-theme {
 
 body.dark-theme .history-item:hover {
     background-color: #333;
+}
+
+body.dark-theme .loading-container {
+    background-color: rgba(42, 42, 42, 0.8);
 }
 
 /* Desktop styles */
