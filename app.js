@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rejectButton = document.getElementById('reject-button');
     
     // Pagination state
-    const wordsPerPage = 7; // Updated from 10 to 7 in v1.3
+    const wordsPerPage = 7; // Updated from 10 to 7 in v1.3 // Updated from 10 to 7 in v1.3
     let currentPage = 1;
     let totalPages = 1;
     let allWords = [];
