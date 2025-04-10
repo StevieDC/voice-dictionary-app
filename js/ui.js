@@ -5,7 +5,7 @@ class UI {
         this.menuToggle = document.getElementById('menu-toggle');
         this.navMenu = document.getElementById('nav-menu');
         this.homeLink = document.getElementById('home-link');
-        this.logoLink = document.getElementById('logo-link');
+        // No more logo link
         this.savedWordsLink = document.getElementById('saved-words-link');
         this.settingsLink = document.getElementById('settings-link');
         
@@ -60,12 +60,6 @@ class UI {
         });
 
         this.homeLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showSection(this.homeSection);
-            this.setActiveNavLink(this.homeLink);
-        });
-        
-        this.logoLink.addEventListener('click', (e) => {
             e.preventDefault();
             this.showSection(this.homeSection);
             this.setActiveNavLink(this.homeLink);
@@ -176,13 +170,15 @@ class UI {
         this.actionButtonsContainer.classList.add('hidden');
     }
     
-    showLoadingSpinner() {
+    showLoadingSpinner(word) {
         this.loadingContainer.classList.add('visible');
+        this.loadingContainer.querySelector('.loading-text').textContent = `Looking up definition for "${word}"...`;
         this.definitionDisplayElement.innerHTML = '';
     }
     
     hideLoadingSpinner() {
         this.loadingContainer.classList.remove('visible');
+        this.loadingContainer.querySelector('.loading-text').textContent = '';
     }
 
     updateStatus(message) {
