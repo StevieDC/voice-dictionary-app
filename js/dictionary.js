@@ -43,7 +43,9 @@ class Dictionary {
             const word = event.results[0][0].transcript.trim().toLowerCase();
             ui.showWord(word);
             ui.updateStatus(`Looking up: "${word}"`);
-            this.lookupWord(word, null, ui, null, null);
+            this.lookupWord(word, ui.app.db, ui, ui.app.settings, (wordData) => {
+                ui.app.currentWordData = wordData;
+            });
         };
 
         this.recognition.onerror = (event) => {
@@ -60,7 +62,11 @@ class Dictionary {
             this.recognition.start();
         } catch (error) {
             console.error('Recognition error:', error);
-            ui.updateStatus('Error starting recognition. Try again.');
+            console.log('UI reference:', ui);
+            // Use a safer approach to update status
+            if (this.ui && typeof this.ui.updateStatus === 'function') {
+                this.ui.updateStatus('Error starting recognition. Try again.');
+            }
         }
     }
 
@@ -68,6 +74,7 @@ class Dictionary {
         try {
             // Show loading spinner with the word being looked up
             ui.showLoadingSpinner(word);
+            console.log('Loading spinner shown for word:', word);
             
             const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
             if (!response.ok) {
@@ -75,6 +82,7 @@ class Dictionary {
             }
             
             const data = await response.json();
+            console.log('API response:', data);
             
             if (data && data.length > 0) {
                 const wordData = data[0];
@@ -102,9 +110,14 @@ class Dictionary {
                     definitions: definitions
                 };
                 
+                console.log('Word data created:', currentWordData);
+                
                 // If callback provided, send back the word data
-                if (callback) {
+                if (callback && typeof callback === 'function') {
                     callback(currentWordData);
+                    console.log('Callback executed with word data');
+                } else {
+                    console.warn('Callback not provided or not a function');
                 }
                 
                 // Display definition
@@ -115,15 +128,18 @@ class Dictionary {
                 
                 // If settings and db provided, handle auto-save
                 if (settings && db) {
+                    console.log('Settings and DB available');
                     // If auto-save is enabled, save the word automatically
                     if (settings.getSetting('autoSave')) {
                         this.saveWord(wordData.word, definitions, db, ui);
                         ui.updateStatus(`"${wordData.word}" automatically saved to dictionary`);
                     } else {
                         ui.showActionButtons();
+                        console.log('Action buttons shown');
                     }
                 } else {
                     ui.showActionButtons();
+                    console.log('Settings or DB not available, showing action buttons anyway');
                 }
             } else {
                 throw new Error('No definitions found');
