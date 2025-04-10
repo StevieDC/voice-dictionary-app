@@ -22,13 +22,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusElement = document.getElementById('status');
     const wordDisplayElement = document.getElementById('word-display');
     const definitionDisplayElement = document.getElementById('definition-display');
+    const loadingContainer = document.getElementById('loading-container');
     const historyListElement = document.getElementById('history-list');
     const actionButtonsContainer = document.getElementById('action-buttons');
     const acceptButton = document.getElementById('accept-button');
     const rejectButton = document.getElementById('reject-button');
     
     // Pagination state
-    const wordsPerPage = 15;
+    const wordsPerPage = 7;
     let currentPage = 1;
     let totalPages = 1;
     let allWords = [];
@@ -268,9 +269,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function hideActionButtons() {
         actionButtonsContainer.classList.add('hidden');
     }
+    
+    function showLoadingSpinner() {
+        loadingContainer.classList.add('visible');
+        definitionDisplayElement.innerHTML = '';
+    }
+    
+    function hideLoadingSpinner() {
+        loadingContainer.classList.remove('visible');
+    }
 
     async function lookupWord(word) {
         try {
+            // Show loading spinner
+            showLoadingSpinner();
+            
             const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
             if (!response.ok) {
                 throw new Error('Word not found');
@@ -306,6 +319,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 displayDefinition(wordData.word, definitions);
                 
+                // Hide loading spinner
+                hideLoadingSpinner();
+                
                 // If auto-save is enabled, save the word automatically
                 if (settings.autoSave) {
                     saveWord(wordData.word, definitions);
@@ -318,6 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Lookup error:', error);
+            hideLoadingSpinner();
             definitionDisplayElement.innerHTML = `<p>Sorry, couldn't find a definition for "${word}". Please try another word.</p>`;
             hideActionButtons();
         }
