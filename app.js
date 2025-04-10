@@ -879,4 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize the app
     initSpeechRecognition();
+    
+    // Make sure loading container is hidden initially
+    hideLoadingSpinner();
 });
