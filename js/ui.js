@@ -48,11 +48,13 @@ class UI {
         
         // Make sure loading container is hidden initially
         this.hideLoadingSpinner();
+        console.log('UI initialized, loading spinner hidden');
     }
 
     bindEvents(app) {
         // Store app reference
         this.app = app;
+        console.log('App reference stored in UI');
         
         // Navigation Menu Handlers
         this.menuToggle.addEventListener('click', () => {
@@ -106,11 +108,16 @@ class UI {
             }
         });
         
+        // Accept button event
         this.acceptButton.addEventListener('click', () => {
+            console.log('Accept button clicked');
+            console.log('Current word data in app:', app.currentWordData);
             app.saveWord();
         });
         
+        // Reject button event
         this.rejectButton.addEventListener('click', () => {
+            console.log('Reject button clicked');
             app.rejectWord();
         });
         
@@ -135,6 +142,8 @@ class UI {
         this.clearHistoryButton.addEventListener('click', () => {
             app.clearHistory();
         });
+        
+        console.log('UI event bindings complete');
     }
 
     // Navigation methods
@@ -164,25 +173,59 @@ class UI {
     // UI state methods
     showActionButtons() {
         this.actionButtonsContainer.classList.remove('hidden');
+        console.log('Action buttons shown');
     }
     
     hideActionButtons() {
         this.actionButtonsContainer.classList.add('hidden');
+        console.log('Action buttons hidden');
     }
     
     showLoadingSpinner(word) {
+        if (!this.loadingContainer) {
+            console.error('Loading container not found in the DOM');
+            return;
+        }
+        
+        // Get the loading text element directly
+        const loadingText = this.loadingContainer.querySelector('.loading-text');
+        if (loadingText) {
+            loadingText.textContent = `Looking up definition for "${word}"...`;
+        } else {
+            console.error('Loading text element not found inside loading container');
+        }
+        
+        // Ensure we clear the definition display
+        if (this.definitionDisplayElement) {
+            this.definitionDisplayElement.innerHTML = '';
+        }
+        
+        // Show the loading container by removing hidden and adding visible
+        this.loadingContainer.classList.remove('hidden');
         this.loadingContainer.classList.add('visible');
-        this.loadingContainer.querySelector('.loading-text').textContent = `Looking up definition for "${word}"...`;
-        this.definitionDisplayElement.innerHTML = '';
+        console.log(`Loading spinner shown for word: ${word}`);
     }
     
     hideLoadingSpinner() {
+        if (!this.loadingContainer) {
+            console.error('Loading container not found in the DOM');
+            return;
+        }
+        
+        // Get the loading text element directly
+        const loadingText = this.loadingContainer.querySelector('.loading-text');
+        if (loadingText) {
+            loadingText.textContent = '';
+        }
+        
+        // Hide the loading container by adding hidden and removing visible
         this.loadingContainer.classList.remove('visible');
-        this.loadingContainer.querySelector('.loading-text').textContent = '';
+        console.log('Loading spinner hidden');
     }
 
     updateStatus(message) {
         this.statusElement.textContent = message;
+        console.log(`Status updated: ${message}`);
     }
 
     showWord(word) {
@@ -223,6 +266,7 @@ class UI {
         }
 
         this.definitionDisplayElement.innerHTML = html;
+        console.log(`Definition displayed for word: ${word}`);
     }
 
     clearHistoryList() {
