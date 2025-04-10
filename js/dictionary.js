@@ -66,8 +66,8 @@ class Dictionary {
 
     async lookupWord(word, db, ui, settings, callback) {
         try {
-            // Show loading spinner
-            ui.showLoadingSpinner();
+            // Show loading spinner with the word being looked up
+            ui.showLoadingSpinner(word);
             
             const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
             if (!response.ok) {
