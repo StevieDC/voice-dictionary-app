@@ -8,18 +8,18 @@ class UI {
         // No more logo link
         this.savedWordsLink = document.getElementById('saved-words-link');
         this.settingsLink = document.getElementById('settings-link');
-        
+
         // DOM Elements - Sections
         this.homeSection = document.getElementById('home-section');
         this.savedWordsSection = document.getElementById('saved-words-section');
         this.settingsSection = document.getElementById('settings-section');
-        
+
         // DOM Elements - Pagination
         this.prevPageButton = document.getElementById('prev-page');
         this.nextPageButton = document.getElementById('next-page');
         this.currentPageElement = document.getElementById('current-page');
         this.totalPagesElement = document.getElementById('total-pages');
-        
+
         // DOM Elements - Dictionary
         this.micButton = document.getElementById('mic-button');
         this.statusElement = document.getElementById('status');
@@ -30,7 +30,7 @@ class UI {
         this.actionButtonsContainer = document.getElementById('action-buttons');
         this.acceptButton = document.getElementById('accept-button');
         this.rejectButton = document.getElementById('reject-button');
-        
+
         // DOM Elements - Settings
         this.voiceLanguageSelect = document.getElementById('voice-language');
         this.themeSelect = document.getElementById('theme-select');
@@ -50,7 +50,7 @@ class UI {
     init() {
         // Store app reference for later use
         this.app = null;
-        
+
         // Make sure loading container is hidden initially
         this.hideLoadingSpinner();
     }
@@ -58,7 +58,7 @@ class UI {
     bindEvents(app) {
         // Store app reference
         this.app = app;
-=======
+
         // Navigation Menu Handlers
         this.menuToggle.addEventListener('click', () => {
             this.navMenu.classList.toggle('active');
@@ -69,7 +69,7 @@ class UI {
             this.showSection(this.homeSection);
             this.setActiveNavLink(this.homeLink);
         });
-        
+
         // Logo link event listener removed
 
         this.savedWordsLink.addEventListener('click', (e) => {
@@ -90,14 +90,14 @@ class UI {
             if (!app.dictionary.recognition) {
                 app.dictionary.initSpeechRecognition(app.settings.getSetting('language'), this);
             }
-            
+
             if (this.micButton.classList.contains('listening')) {
                 app.dictionary.recognition.stop();
             } else {
                 app.startListening();
             }
         });
-        
+
         // Pagination event handlers
         this.prevPageButton.addEventListener('click', () => {
             if (app.dictionary.currentPage > 1) {
@@ -105,40 +105,53 @@ class UI {
                 app.dictionary.displayPagedWords(this);
             }
         });
-        
+
         this.nextPageButton.addEventListener('click', () => {
             if (app.dictionary.currentPage < app.dictionary.totalPages) {
                 app.dictionary.currentPage++;
                 app.dictionary.displayPagedWords(this);
             }
         });
-        
+
         this.acceptButton.addEventListener('click', () => {
-            app.saveWord();
+            if (this.app.currentWordData) {
+                this.app.dictionary.saveWord(
+                    this.app.currentWordData.word,
+                    this.app.currentWordData.definitions,
+                    this.app.db,
+                    this
+                );
+                this.hideActionButtons();
+                this.updateStatus(`"${this.app.currentWordData.word}" saved to dictionary`);
+                this.app.currentWordData = null;
+            }
         });
-        
+
         this.rejectButton.addEventListener('click', () => {
             app.rejectWord();
+            this.showSection(this.homeSection); // Return to the initial screen
+            this.wordDisplayElement.textContent = ''; // Clear the word display
+            this.definitionDisplayElement.innerHTML = ''; // Clear the definition display
         });
-        
+
         this.saveSettingsButton.addEventListener('click', () => {
             app.saveSettings();
         });
-        
+
         this.backupDataButton.addEventListener('click', () => {
             app.backupDictionary();
         });
-        
+
         this.importDataButton.addEventListener('click', () => {
             this.importFileInput.click();
         });
-        
+
         this.importFileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 app.importDictionary(e.target.files[0]);
             }
         });
-        
+
         this.clearHistoryButton.addEventListener('click', () => {
             app.clearHistory();
         });
@@ -150,20 +163,20 @@ class UI {
         this.homeSection.classList.add('hidden');
         this.savedWordsSection.classList.add('hidden');
         this.settingsSection.classList.add('hidden');
-        
+
         // Show the requested section
         section.classList.remove('hidden');
-        
+
         // Close mobile menu
         this.navMenu.classList.remove('active');
     }
-    
+
     setActiveNavLink(link) {
         // Remove active class from all links
         this.homeLink.classList.remove('active');
         this.savedWordsLink.classList.remove('active');
         this.settingsLink.classList.remove('active');
-        
+
         // Add active class to the clicked link
         link.classList.add('active');
     }
@@ -172,17 +185,17 @@ class UI {
     showActionButtons() {
         this.actionButtonsContainer.classList.remove('hidden');
     }
-    
+
     hideActionButtons() {
         this.actionButtonsContainer.classList.add('hidden');
     }
-    
+
     showLoadingSpinner(word) {
         this.loadingContainer.classList.add('visible');
         this.loadingContainer.querySelector('.loading-text').textContent = `Looking up definition for "${word}"...`;
         this.definitionDisplayElement.innerHTML = '';
     }
-    
+
     hideLoadingSpinner() {
         this.loadingContainer.classList.remove('visible');
         this.loadingContainer.querySelector('.loading-text').textContent = '';
@@ -217,7 +230,7 @@ class UI {
         // Display each part of speech and its definitions
         for (const [pos, defs] of Object.entries(groupedDefs)) {
             html += `<p><span class="part-of-speech">${pos}</span></p><ol>`;
-            
+
             defs.forEach(def => {
                 html += `<li>${def.definition}`;
                 if (def.example) {
@@ -225,7 +238,7 @@ class UI {
                 }
                 html += `</li>`;
             });
-            
+
             html += `</ol>`;
         }
 
@@ -244,7 +257,7 @@ class UI {
     updatePaginationControls(currentPage, totalPages) {
         // Update previous button state
         this.prevPageButton.disabled = currentPage <= 1;
-        
+
         // Update next button state
         this.nextPageButton.disabled = currentPage >= totalPages;
     }
@@ -273,17 +286,17 @@ class UI {
             if (e.target.classList.contains('delete-word')) {
                 return;
             }
-            
+
             const definitionElement = historyItem.querySelector('.history-item-definition');
             const definitionContent = definitionElement.querySelector('.definition-content');
-            
+
             // Close any other open definitions
             document.querySelectorAll('.history-item-definition.expanded').forEach(el => {
                 if (el !== definitionElement) {
                     el.classList.remove('expanded');
                 }
             });
-            
+
             // Toggle this definition
             if (definitionElement.classList.contains('expanded')) {
                 definitionElement.classList.remove('expanded');
@@ -311,7 +324,7 @@ class UI {
 
         this.historyListElement.appendChild(historyItem);
     }
-    
+
     renderDefinitionContent(container, definitions) {
         if (!definitions || definitions.length === 0) {
             container.innerHTML = '<p>No definitions available.</p>';
@@ -332,7 +345,7 @@ class UI {
         // Display each part of speech and its definitions
         for (const [pos, defs] of Object.entries(groupedDefs)) {
             html += `<p><span class="part-of-speech">${pos}</span></p><ol>`;
-            
+
             defs.forEach(def => {
                 html += `<li>${def.definition}`;
                 if (def.example) {
@@ -340,20 +353,20 @@ class UI {
                 }
                 html += `</li>`;
             });
-            
+
             html += `</ol>`;
         }
 
         container.innerHTML = html;
     }
-    
+
     // Settings UI methods
     updateSettingsUI(settings) {
         this.voiceLanguageSelect.value = settings.language;
         this.themeSelect.value = settings.theme;
         this.autoSaveToggle.checked = settings.autoSave;
     }
-    
+
     getSettingsFromUI() {
         return {
             language: this.voiceLanguageSelect.value,
@@ -361,7 +374,7 @@ class UI {
             autoSave: this.autoSaveToggle.checked
         };
     }
-    
+
     applyTheme(theme) {
         if (theme === 'dark') {
             document.body.classList.add('dark-theme');
