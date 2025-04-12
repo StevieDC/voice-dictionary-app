@@ -6,118 +6,112 @@
     <title>Voice Dictionary</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <nav class="top-nav">
-        <div class="nav-logo">Voice Dictionary <span class="version">v1.5</span></div>
-        <button class="menu-toggle" id="menu-toggle">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-        </button>
-        <ul class="nav-menu" id="nav-menu">
-            <li><a href="#" id="home-link" class="active">Home</a></li>
-            <li><a href="#" id="saved-words-link">Saved Words</a></li>
-            <li><a href="#" id="settings-link">Settings</a></li>
-        </ul>
-    </nav>
-
+<body class="theme-light font-medium">
     <div class="container">
-        <div class="section" id="home-section">
-            <div class="voice-section">
-                <p id="status">Click the mic button and say a word to look up its definition</p>
-                <button id="mic-button">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                        <line x1="12" y1="19" x2="12" y2="22"></line>
-                    </svg>
-                </button>
-                <div id="word-display" class="word-display"></div>
-            </div>
+        <header>
+            <h1>Voice Dictionary</h1>
+            <button id="settings-toggle" class="icon-button" title="Settings">⚙️</button>
+        </header>
 
-            <div class="definition-container">
-                <div id="definition-display" class="definition-display"></div>
-                <div id="loading-container" class="loading-container">
-                    <div class="spinner"></div>
-                    <div class="loading-text"></div>
-                </div>
-                <div id="action-buttons" class="action-buttons hidden">
-                    <button id="accept-button" class="action-button accept">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        Accept
-                    </button>
-                    <button id="reject-button" class="action-button reject">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                        Reject
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="section hidden" id="saved-words-section">
-            <h2>Saved Words</h2>
-            <div id="history-list" class="history-list"></div>
-            <div class="pagination-controls">
-                <button id="prev-page" class="pagination-btn" disabled>Previous</button>
-                <span id="page-info">Page <span id="current-page">1</span> of <span id="total-pages">1</span></span>
-                <button id="next-page" class="pagination-btn">Next</button>
-            </div>
-        </div>
-
-        <div class="section hidden" id="settings-section">
+        <div id="settings-panel" class="hidden">
             <h2>Settings</h2>
-            <div class="settings-container">
-                <div class="setting-item">
-                    <label for="voice-language">Voice Recognition Language</label>
-                    <select id="voice-language">
-                        <option value="en-US">English (US)</option>
-                        <option value="en-GB">English (UK)</option>
-                        <option value="es-ES">Spanish</option>
-                        <option value="fr-FR">French</option>
-                        <option value="de-DE">German</option>
-                    </select>
-                </div>
-                <div class="setting-item">
-                    <label for="theme-select">Theme</label>
-                    <select id="theme-select">
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                    </select>
-                </div>
-                <div class="setting-item">
-                    <label for="auto-save">Auto-save Words</label>
-                    <div class="toggle-switch">
-                        <input type="checkbox" id="auto-save">
-                        <span class="toggle-slider"></span>
-                    </div>
-                </div>
-                <div class="setting-item data-management">
-                    <h3>Data Management</h3>
-                    <div class="data-buttons">
-                        <button id="backup-data" class="btn secondary-btn">Backup Dictionary</button>
-                        <button id="import-data" class="btn secondary-btn">Import Backup</button>
-                        <input type="file" id="import-file" accept=".json" class="hidden">
-                        <button id="clear-history" class="btn danger-btn">Clear All Words</button>
-                    </div>
-                </div>
-                <button id="save-settings" class="btn primary-btn">Save Settings</button>
+            <div class="settings-group">
+                <label for="language-select">Language:</label>
+                <select id="language-select">
+                    <option value="en-US">English (US)</option>
+                    <option value="en-GB">English (UK)</option>
+                    <option value="es-ES">Spanish</option>
+                    <option value="fr-FR">French</option>
+                    <option value="de-DE">German</option>
+                </select>
+            </div>
+            
+            <div class="settings-group">
+                <label for="auto-save-toggle">Auto-save words:</label>
+                <input type="checkbox" id="auto-save-toggle">
+            </div>
+            
+            <div class="settings-group">
+                <label for="theme-select">Theme:</label>
+                <select id="theme-select">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+            
+            <div class="settings-group">
+                <label for="font-size-select">Font Size:</label>
+                <select id="font-size-select">
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                </select>
             </div>
         </div>
+
+        <main>
+            <div class="search-section">
+                <div class="input-group">
+                    <input type="text" id="word-input" placeholder="Enter a word or click microphone">
+                    <button id="voice-input" class="icon-button" title="Voice input">🎤</button>
+                </div>
+            </div>
+
+            <div id="loading-spinner" class="hidden">
+                <div class="spinner"></div>
+                <p>Looking up "<span id="loading-word"></span>"...</p>
+            </div>
+
+            <div id="definition-display"></div>
+
+            <div id="action-buttons" class="hidden">
+                <button id="accept-word">Save Word</button>
+                <button id="reject-word">Reject</button>
+            </div>
+
+            <div id="status" class="status-message"></div>
+
+            <div class="history-section">
+                <div class="history-header">
+                    <h2>Saved Words</h2>
+                    <button id="clear-history" class="text-button">Clear All</button>
+                </div>
+                
+                <ul id="history-list"></ul>
+                
+                <div class="pagination">
+                    <button id="prev-page" disabled>&lt;</button>
+                    <span>Page <span id="current-page">1</span> of <span id="total-pages">1</span></span>
+                    <button id="next-page" disabled>&gt;</button>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <!-- Load modular JS files -->
+    <!-- JavaScript imports -->
     <script src="js/storage.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/dictionary.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/app.js"></script>
-    <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const app = new App();
+            
+            // Settings panel toggle
+            const settingsToggle = document.getElementById('settings-toggle');
+            const settingsPanel = document.getElementById('settings-panel');
+            
+            settingsToggle.addEventListener('click', () => {
+                settingsPanel.classList.toggle('hidden');
+            });
+            
+            // Clear history handler
+            const clearHistoryButton = document.getElementById('clear-history');
+            clearHistoryButton.addEventListener('click', () => {
+                app.clearHistory();
+            });
+        });
+    </script>
 </body>
 </html>

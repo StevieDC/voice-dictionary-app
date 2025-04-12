@@ -6,51 +6,46 @@ class Dictionary {
         this.currentPage = 1;
         this.totalPages = 1;
         this.allWords = [];
-
+        
         // Speech recognition
         this.recognition = null;
     }
 
     initSpeechRecognition(language, ui) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
+        
         if (!SpeechRecognition) {
-            ui.updateStatus('Speech recognition is not supported in your browser.');
-            ui.micButton.disabled = true;
+            console.error('Speech recognition not supported in this browser');
             return;
         }
 
         this.recognition = new SpeechRecognition();
-        this.recognition.continuous = false;
         this.recognition.lang = language;
         this.recognition.interimResults = false;
         this.recognition.maxAlternatives = 1;
 
         this.recognition.onstart = () => {
-            ui.micButton.classList.add('listening');
-            ui.updateStatus('Listening... Say a word');
-            ui.showWord('');
-            ui.definitionDisplayElement.textContent = '';
-            ui.hideActionButtons();
-        };
-
-        this.recognition.onend = () => {
-            ui.micButton.classList.remove('listening');
-            ui.updateStatus('Click the mic button and say a word to look up its definition');
+            console.log('Speech recognition started');
+            ui.updateStatus('Listening...');
         };
 
         this.recognition.onresult = (event) => {
-            const word = event.results[0][0].transcript.trim().toLowerCase();
-            ui.showWord(word);
-            ui.updateStatus(`Looking up: "${word}"`);
-            this.lookupWord(word, ui.app.db, ui, ui.app.settings, (wordData) => {
-                ui.app.currentWordData = wordData;
+            const transcript = event.results[0][0].transcript.trim();
+            console.log('Speech recognition result:', transcript);
+            ui.updateStatus(`Recognized: "${transcript}"`);
+            this.lookupWord(transcript, ui.app.db, ui, ui.app.settings, (wordData) => {
+                console.log('Word data from recognition:', wordData);
             });
         };
 
         this.recognition.onerror = (event) => {
-            ui.micButton.classList.remove('listening');
-            ui.updateStatus(`Error: ${event.error}`);
+            console.error('Speech recognition error:', event.error);
+            ui.updateStatus('Error during recognition. Try again.');
+        };
+
+        this.recognition.onend = () => {
+            console.log('Speech recognition ended');
+            ui.updateStatus('Recognition ended.');
         };
     }
 
@@ -62,7 +57,10 @@ class Dictionary {
             this.recognition.start();
         } catch (error) {
             console.error('Recognition error:', error);
-            ui.updateStatus('Error starting recognition. Try again.');
+            // Use a safer approach to update status
+            if (this.ui && typeof this.ui.updateStatus === 'function') {
+                this.ui.updateStatus('Error starting recognition. Try again.');
+            }
         }
     }
 
@@ -70,22 +68,24 @@ class Dictionary {
         try {
             // Show loading spinner with the word being looked up
             ui.showLoadingSpinner(word);
-
+            console.log('Loading spinner shown for word:', word);
+            
             const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
             if (!response.ok) {
                 throw new Error('Word not found');
             }
-
+            
             const data = await response.json();
-
+            console.log('API response:', data);
+            
             if (data && data.length > 0) {
                 const wordData = data[0];
                 const definitions = [];
-
+                
                 if (wordData.meanings && wordData.meanings.length > 0) {
                     wordData.meanings.forEach(meaning => {
                         const partOfSpeech = meaning.partOfSpeech;
-
+                        
                         if (meaning.definitions && meaning.definitions.length > 0) {
                             meaning.definitions.forEach(def => {
                                 definitions.push({
@@ -97,32 +97,44 @@ class Dictionary {
                         }
                     });
                 }
-
-                // Create word data object
+                
+                // Create word data
                 const currentWordData = {
-                    word: word.toLowerCase(),
+                    word: wordData.word,
                     definitions: definitions
                 };
-
-                // Always call callback with word data if provided
-                if (callback) {
+                
+                console.log('Word data created:', currentWordData);
+                
+                // If callback provided, send back the word data
+                if (callback && typeof callback === 'function') {
                     callback(currentWordData);
+                    console.log('Callback executed with word data');
+                } else {
+                    console.warn('Callback not provided or not a function');
                 }
-
+                
                 // Display definition
-                ui.displayDefinition(word, definitions);
-
+                ui.displayDefinition(wordData.word, definitions);
+                
                 // Hide loading spinner
                 ui.hideLoadingSpinner();
-
-                // Handle auto-save if enabled
-                if (settings && db && settings.getSetting('autoSave')) {
-                    this.saveWord(word.toLowerCase(), definitions, db, ui);
-                    ui.updateStatus(`"${word}" automatically saved to dictionary`);
+                
+                // If settings and db provided, handle auto-save
+                if (settings && db) {
+                    console.log('Settings and DB available');
+                    // If auto-save is enabled, save the word automatically
+                    if (settings.getSetting('autoSave')) {
+                        this.saveWord(wordData.word, definitions, db, ui);
+                        ui.updateStatus(`"${wordData.word}" automatically saved to dictionary`);
+                    } else {
+                        ui.showActionButtons();
+                        console.log('Action buttons shown');
+                    }
                 } else {
                     ui.showActionButtons();
+                    console.log('Settings or DB not available, showing action buttons anyway');
                 }
-
             } else {
                 throw new Error('No definitions found');
             }
@@ -154,13 +166,10 @@ class Dictionary {
         request.onsuccess = () => {
             console.log(`Word "${word}" saved successfully`);
             this.loadSavedWords(db, ui);
-            ui.updateStatus(`"${word}" saved to dictionary`);
-            ui.hideActionButtons();
         };
 
         request.onerror = (event) => {
             console.error('Error saving word:', event.target.error);
-            ui.updateStatus('Error saving word to dictionary');
         };
     }
 
@@ -176,27 +185,27 @@ class Dictionary {
 
         request.onsuccess = () => {
             console.log(`Word "${word}" deleted successfully`);
-
+            
             // Remove from our array
             const indexToRemove = this.allWords.findIndex(item => item.word === word);
             if (indexToRemove !== -1) {
                 this.allWords.splice(indexToRemove, 1);
-
+                
                 // Recalculate total pages
                 this.totalPages = Math.ceil(this.allWords.length / this.wordsPerPage);
                 ui.totalPagesElement.textContent = this.totalPages;
-
+                
                 // Adjust current page if needed
                 if (this.currentPage > this.totalPages && this.totalPages > 0) {
                     this.currentPage = this.totalPages;
                 }
-
+                
                 // If we're on page 0 (no words), set page to 1 but show empty list
                 if (this.totalPages === 0) {
                     this.currentPage = 1;
                     this.totalPages = 1;
                 }
-
+                
                 // Update display
                 this.displayPagedWords(ui);
             }
@@ -219,7 +228,7 @@ class Dictionary {
         const request = index.openCursor(null, 'prev'); // Sort by newest first
 
         this.allWords = []; // Reset the array
-
+        
         request.onsuccess = (event) => {
             const cursor = event.target.result;
             if (cursor) {
@@ -229,14 +238,14 @@ class Dictionary {
                 // All words have been collected
                 this.totalPages = Math.ceil(this.allWords.length / this.wordsPerPage);
                 ui.totalPagesElement.textContent = this.totalPages;
-
+                
                 // Reset to first page when loading/reloading words
                 this.currentPage = 1;
                 ui.currentPageElement.textContent = this.currentPage;
-
+                
                 // Update pagination buttons state
                 ui.updatePaginationControls(this.currentPage, this.totalPages);
-
+                
                 // Display the first page
                 this.displayPagedWords(ui);
             }
@@ -246,23 +255,23 @@ class Dictionary {
             console.error('Error loading words:', event.target.error);
         };
     }
-
+    
     displayPagedWords(ui) {
         // Clear the history list
         ui.clearHistoryList();
-
+        
         // Calculate the index range for the current page
         const startIndex = (this.currentPage - 1) * this.wordsPerPage;
         const endIndex = Math.min(startIndex + this.wordsPerPage, this.allWords.length);
-
+        
         // Display words for the current page
         for (let i = startIndex; i < endIndex; i++) {
             ui.addWordToHistory(this.allWords[i], (word) => this.deleteWord(word, ui.app.db, ui));
         }
-
+        
         // Update current page display
         ui.updatePaginationInfo(this.currentPage, this.totalPages);
-
+        
         // Update pagination controls
         ui.updatePaginationControls(this.currentPage, this.totalPages);
     }

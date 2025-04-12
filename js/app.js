@@ -1,36 +1,48 @@
 // Main App class
 class App {
     constructor() {
-        // Components
-        this.db = null;
-        this.ui = new UI();
+        // Initialize components
         this.dictionary = new Dictionary();
-        this.storage = new Storage();
         this.settings = new Settings();
-
-        // State
-        this.currentWordData = null;
+        this.db = null;
+        this.ui = new UI(this);
+        
+        // Initialize the database
+        this.initDatabase();
+        
+        // Load settings
+        this.settings.loadSettings();
+        
+        // Initialize speech recognition with current language
+        const language = this.settings.getSetting('language') || 'en-US';
+        this.dictionary.initSpeechRecognition(language, this.ui);
     }
-
-    init() {
-        // Initialize UI
-        this.ui.init();
-        this.ui.bindEvents(this);
-
-        // Initialize database
-        this.storage.initDatabase()
-            .then(db => {
-                this.db = db;
-                console.log('Database opened successfully');
-
-                // Load data
-                this.dictionary.loadSavedWords(this.db, this.ui);
-                this.settings.loadSettings(this.db, this.ui);
-            })
-            .catch(error => {
-                console.error('Error initializing database:', error);
-                this.ui.updateStatus('Error: Could not open database.');
-            });
+    
+    initDatabase() {
+        const request = indexedDB.open('dictionary', 1);
+        
+        request.onerror = (event) => {
+            console.error('Database error:', event.target.error);
+        };
+        
+        request.onsuccess = (event) => {
+            this.db = event.target.result;
+            console.log('Database opened successfully');
+            
+            // Load saved words after database is initialized
+            this.dictionary.loadSavedWords(this.db, this.ui);
+        };
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            
+            // Create object store for words if it doesn't exist
+            if (!db.objectStoreNames.contains('words')) {
+                const store = db.createObjectStore('words', { keyPath: 'word' });
+                store.createIndex('timestamp', 'timestamp');
+                console.log('Words store created');
+            }
+        };
     }
 
     // Speech recognition methods
@@ -40,48 +52,23 @@ class App {
 
     // Word actions
     lookupWord(word) {
-        this.dictionary.lookupWord(
-            word,
-            this.db,
-            this.ui,
-            this.settings,
-            (wordData) => {
-                this.currentWordData = wordData;
-            }
-        );
+        this.dictionary.lookupWord(word, this.db, this.ui, this.settings, (wordData) => {
+            this.currentWordData = wordData;
+        });
     }
 
     saveWord() {
         if (this.currentWordData) {
-            const transaction = this.db.transaction(['words'], 'readwrite');
-            const store = transaction.objectStore('words');
-
-            const wordData = {
-                word: this.currentWordData.word,
-                definitions: this.currentWordData.definitions,
-                timestamp: new Date().getTime()
-            };
-
-            const request = store.put(wordData);
-
-            request.onsuccess = () => {
-                console.log(`Word "${wordData.word}" saved successfully`);
-                this.dictionary.loadSavedWords(this.db, this.ui);
-                this.ui.hideActionButtons();
-                this.ui.updateStatus(`"${wordData.word}" saved to dictionary`);
-                this.currentWordData = null;
-            };
-
-            request.onerror = (event) => {
-                console.error('Error saving word:', event.target.error);
-                this.ui.updateStatus('Error saving word to dictionary');
-            };
+            this.dictionary.saveWord(this.currentWordData.word, this.currentWordData.definitions, this.db, this.ui);
+            this.ui.hideActionButtons();
+            this.ui.updateStatus(`"${this.currentWordData.word}" saved to dictionary`);
+            this.currentWordData = null;
         }
     }
 
     rejectWord() {
         this.ui.hideActionButtons();
-        this.ui.updateStatus(''); // Clear the status message
+        this.ui.updateStatus(`"${this.currentWordData ? this.currentWordData.word : ''}" rejected`);
         this.currentWordData = null;
     }
 
