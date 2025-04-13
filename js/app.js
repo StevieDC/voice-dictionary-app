@@ -1,36 +1,48 @@
 // Main App class
 class App {
     constructor() {
-        // Components
-        this.db = null;
-        this.ui = new UI();
+        // Initialize components
         this.dictionary = new Dictionary();
-        this.storage = new Storage();
         this.settings = new Settings();
+        this.db = null;
+        this.ui = new UI(this);
         
-        // State
-        this.currentWordData = null;
+        // Initialize the database
+        this.initDatabase();
+        
+        // Load settings
+        this.settings.loadSettings();
+        
+        // Initialize speech recognition with current language
+        const language = this.settings.getSetting('language') || 'en-US';
+        this.dictionary.initSpeechRecognition(language, this.ui);
     }
-
-    init() {
-        // Initialize UI
-        this.ui.init();
-        this.ui.bindEvents(this);
+    
+    initDatabase() {
+        const request = indexedDB.open('dictionary', 1);
         
-        // Initialize database
-        this.storage.initDatabase()
-            .then(db => {
-                this.db = db;
-                console.log('Database opened successfully');
-                
-                // Load data
-                this.dictionary.loadSavedWords(this.db, this.ui);
-                this.settings.loadSettings(this.db, this.ui);
-            })
-            .catch(error => {
-                console.error('Error initializing database:', error);
-                this.ui.updateStatus('Error: Could not open database.');
-            });
+        request.onerror = (event) => {
+            console.error('Database error:', event.target.error);
+        };
+        
+        request.onsuccess = (event) => {
+            this.db = event.target.result;
+            console.log('Database opened successfully');
+            
+            // Load saved words after database is initialized
+            this.dictionary.loadSavedWords(this.db, this.ui);
+        };
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            
+            // Create object store for words if it doesn't exist
+            if (!db.objectStoreNames.contains('words')) {
+                const store = db.createObjectStore('words', { keyPath: 'word' });
+                store.createIndex('timestamp', 'timestamp');
+                console.log('Words store created');
+            }
+        };
     }
 
     // Speech recognition methods

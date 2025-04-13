@@ -2,7 +2,7 @@
 class Dictionary {
     constructor() {
         // Pagination state
-        this.wordsPerPage = 7; // Updated from 10 to 7 in v1.3
+        this.wordsPerPage = 7; // Updated from 10 to 7 in v1.4
         this.currentPage = 1;
         this.totalPages = 1;
         this.allWords = [];
@@ -15,42 +15,37 @@ class Dictionary {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         
         if (!SpeechRecognition) {
-            ui.updateStatus('Speech recognition is not supported in your browser.');
-            ui.micButton.disabled = true;
+            console.error('Speech recognition not supported in this browser');
             return;
         }
 
         this.recognition = new SpeechRecognition();
-        this.recognition.continuous = false;
         this.recognition.lang = language;
         this.recognition.interimResults = false;
         this.recognition.maxAlternatives = 1;
 
         this.recognition.onstart = () => {
-            ui.micButton.classList.add('listening');
-            ui.updateStatus('Listening... Say a word');
-            ui.showWord('');
-            ui.definitionDisplayElement.textContent = '';
-            ui.hideActionButtons();
-        };
-
-        this.recognition.onend = () => {
-            ui.micButton.classList.remove('listening');
-            ui.updateStatus('Click the mic button and say a word to look up its definition');
+            console.log('Speech recognition started');
+            ui.updateStatus('Listening...');
         };
 
         this.recognition.onresult = (event) => {
-            const word = event.results[0][0].transcript.trim().toLowerCase();
-            ui.showWord(word);
-            ui.updateStatus(`Looking up: "${word}"`);
-            this.lookupWord(word, ui.app.db, ui, ui.app.settings, (wordData) => {
-                ui.app.currentWordData = wordData;
+            const transcript = event.results[0][0].transcript.trim();
+            console.log('Speech recognition result:', transcript);
+            ui.updateStatus(`Recognized: "${transcript}"`);
+            this.lookupWord(transcript, ui.app.db, ui, ui.app.settings, (wordData) => {
+                console.log('Word data from recognition:', wordData);
             });
         };
 
         this.recognition.onerror = (event) => {
-            ui.micButton.classList.remove('listening');
-            ui.updateStatus(`Error: ${event.error}`);
+            console.error('Speech recognition error:', event.error);
+            ui.updateStatus('Error during recognition. Try again.');
+        };
+
+        this.recognition.onend = () => {
+            console.log('Speech recognition ended');
+            ui.updateStatus('Recognition ended.');
         };
     }
 
@@ -62,7 +57,6 @@ class Dictionary {
             this.recognition.start();
         } catch (error) {
             console.error('Recognition error:', error);
-            console.log('UI reference:', ui);
             // Use a safer approach to update status
             if (this.ui && typeof this.ui.updateStatus === 'function') {
                 this.ui.updateStatus('Error starting recognition. Try again.');
