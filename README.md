@@ -1,4 +1,4 @@
-# Voice Dictionary App v1.3
+# Voice Dictionary App
 
 ## Overview
 A voice-activated dictionary application that allows users to look up word definitions by speaking, with backup and restore functionality.
